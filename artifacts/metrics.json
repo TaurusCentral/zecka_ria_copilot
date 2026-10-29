@@ -1,0 +1,170 @@
+{
+  "personas": [
+    {
+      "name": "Fresh graduate, Bengaluru",
+      "risk": {
+        "capacity_score": 65,
+        "capacity_bucket": "growth",
+        "tolerance_score": 70,
+        "tolerance_bucket": "growth",
+        "resolved_score": 44,
+        "resolved_bucket": "moderate",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [
+          "BUILD_EMERGENCY_FUND_FIRST"
+        ],
+        "notes": [
+          "Emergency reserve below 3 months of essential outflow."
+        ]
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.35,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.09201793758476984,
+        "annualized_volatility": 0.05682363353730869,
+        "max_drawdown": -0.09598554347401522,
+        "positive_month_fraction": 0.7166666666666667,
+        "ending_value_on_1": 2.4115580574357813
+      }
+    },
+    {
+      "name": "Young couple, Pune",
+      "risk": {
+        "capacity_score": 79,
+        "capacity_bucket": "growth",
+        "tolerance_score": 77,
+        "tolerance_bucket": "growth",
+        "resolved_score": 77,
+        "resolved_bucket": "growth",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [],
+        "notes": []
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.7,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.11083857056637014,
+        "annualized_volatility": 0.11364726707461738,
+        "max_drawdown": -0.20342803493629402,
+        "positive_month_fraction": 0.65,
+        "ending_value_on_1": 2.8609450027563144
+      }
+    },
+    {
+      "name": "Small business owner, Surat",
+      "risk": {
+        "capacity_score": 67,
+        "capacity_bucket": "growth",
+        "tolerance_score": 32,
+        "tolerance_bucket": "conservative",
+        "resolved_score": 32,
+        "resolved_bucket": "conservative",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [],
+        "notes": []
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.2,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.08295613681465652,
+        "annualized_volatility": 0.032470647735604964,
+        "max_drawdown": -0.049335396523430664,
+        "positive_month_fraction": 0.7916666666666666,
+        "ending_value_on_1": 2.218751513594134
+      }
+    },
+    {
+      "name": "Doctor, Patna",
+      "risk": {
+        "capacity_score": 80,
+        "capacity_bucket": "aggressive",
+        "tolerance_score": 17,
+        "tolerance_bucket": "conservative",
+        "resolved_score": 17,
+        "resolved_bucket": "conservative",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [],
+        "notes": []
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.2,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.08295613681465652,
+        "annualized_volatility": 0.032470647735604964,
+        "max_drawdown": -0.049335396523430664,
+        "positive_month_fraction": 0.7916666666666666,
+        "ending_value_on_1": 2.218751513594134
+      }
+    },
+    {
+      "name": "Retiree, Chennai",
+      "risk": {
+        "capacity_score": 68,
+        "capacity_bucket": "growth",
+        "tolerance_score": 0,
+        "tolerance_bucket": "conservative",
+        "resolved_score": 0,
+        "resolved_bucket": "conservative",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [
+          "RETIREMENT_INCOME_PROTECTION"
+        ],
+        "notes": [
+          "Retirement-stage capacity adjustment applied."
+        ]
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.2,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.08295613681465652,
+        "annualized_volatility": 0.032470647735604964,
+        "max_drawdown": -0.049335396523430664,
+        "positive_month_fraction": 0.7916666666666666,
+        "ending_value_on_1": 2.218751513594134
+      }
+    },
+    {
+      "name": "Aggressive trader, Mumbai",
+      "risk": {
+        "capacity_score": 58,
+        "capacity_bucket": "balanced",
+        "tolerance_score": 100,
+        "tolerance_bucket": "aggressive",
+        "resolved_score": 44,
+        "resolved_bucket": "moderate",
+        "resolution_rule": "Resolved to the lower of capacity and tolerance so willingness cannot override ability to bear loss.",
+        "flags": [
+          "BUILD_EMERGENCY_FUND_FIRST",
+          "SPECULATIVE_BEHAVIOUR_REVIEW"
+        ],
+        "notes": [
+          "Emergency reserve below 3 months of essential outflow.",
+          "Recent speculative losses trigger a behavioural-risk haircut."
+        ]
+      },
+      "bt": {
+        "months": 120,
+        "years": 10.0,
+        "equity_weight": 0.35,
+        "debt_proxy_annual": 0.07,
+        "cagr": 0.09201793758476984,
+        "annualized_volatility": 0.05682363353730869,
+        "max_drawdown": -0.09598554347401522,
+        "positive_month_fraction": 0.7166666666666667,
+        "ending_value_on_1": 2.4115580574357813
+      }
+    }
+  ],
+  "adversarial_pass": 10,
+  "adversarial_total": 10
+}

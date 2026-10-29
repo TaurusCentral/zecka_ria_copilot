@@ -1,0 +1,178 @@
+\documentclass[9pt,a4paper]{article}
+\usepackage[a4paper,margin=13mm]{geometry}
+\usepackage{booktabs,tabularx,array,multirow}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\definecolor{navy}{HTML}{0B1F33}
+\definecolor{teal}{HTML}{0E8A84}
+\definecolor{soft}{HTML}{F2F6F8}
+\hypersetup{colorlinks=true,linkcolor=teal,urlcolor=teal}
+\titleformat{\section}{\large\bfseries\color{navy}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{teal}}{\thesubsection}{0.5em}{}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlist[itemize]{leftmargin=4mm,itemsep=1pt,topsep=2pt}
+\input{generated_metrics.tex}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pill}[1]{\fcolorbox{teal}{soft}{\strut #1}}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries\color{navy} RIA Copilot: Suitability-First AI Advisory at Scale}\\[2mm]
+{\large ZECKATHON PS04 Final Report}\\[2mm]
+\pill{Deterministic planning}\hspace{2mm}\pill{Citation-first research}\hspace{2mm}\pill{Human approval}\hspace{2mm}\pill{Reproducible backtest}
+\end{center}
+
+\section*{Executive Summary}
+We built a working co-pilot for a SEBI-registered Investment Adviser that is designed around one principle: the language model may assist research, but it is not trusted with suitability, financial arithmetic, portfolio constraints, or approval. Risk capacity and risk tolerance are computed separately, conflicts are resolved conservatively, goals are translated into inflation-adjusted corpus and SIP requirements, allocations de-risk through a glide path, research is evidence-bound with source and page metadata, adversarial requests are blocked, and every client-facing plan requires explicit adviser approval.
+
+The architecture directly targets the evaluation axes in PS04: suitability across six personas, factual accuracy under citation requirements, robustness to adversarial prompts, and adviser time saved. The system is deliberately willing to abstain when evidence is missing rather than invent a fund fact. This is important because uncited or fabricated figures are explicitly penalized by the challenge.
+
+\begin{center}
+\fbox{\begin{minipage}{0.95\linewidth}
+\textbf{Core safety invariant:} no recommendation can become client-facing without a completed risk profile, deterministic suitability checks, evidence-backed research where factual claims are used, and an adviser approval event stored with a plan hash.
+\end{minipage}}
+\end{center}
+
+\section{System Architecture}
+\begin{center}
+\begin{tabularx}{0.98\linewidth}{>{\bfseries}p{28mm} X p{36mm}}
+\toprule
+Layer & Responsibility & Failure policy\\
+\midrule
+Profile engine & Separates capacity from behavioural tolerance and records the reason for the resolved profile. & Use the safer side of the conflict.\\
+Goal engine & Computes future corpus, SIP requirement and a time-dependent glide path. & Show assumptions explicitly; never label them guaranteed.\\
+Fund engine & Restricts the live universe to AMFI Direct Growth schemes and ranks verified NAV-derived metrics. & Missing evidence reduces eligibility; no invented metrics.\\
+Research engine & TF-IDF retrieval over factsheets, SIDs, portfolio disclosures and regulatory documents with page metadata. & Abstain when support is insufficient.\\
+Guardrail engine & Detects return guarantees, concentrated/speculative requests, approval bypass, hidden conflicts and evidence fabrication. & Block and offer a suitable alternative path.\\
+Approval and audit & Adviser approval event, timestamp, immutable plan hash and JSONL audit trail. & Draft remains non-client-facing until approval.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The co-pilot is intentionally model-light in the high-risk path. A model can later synthesize retrieved evidence, but calculations and policy gates remain deterministic. This separation reduces hallucination surface area and makes every reported number reproducible from code.
+
+\section{Risk Profiling and Suitability}
+SEBI guidance requires advisers to gather information including age, objectives and horizon, income, assets, risk tolerance and liabilities, and to assess both the risk a client is willing and able to take. Suitability must align advice with the client's risk profile and financial situation. Our engine therefore computes two independent scores.
+
+\subsection{Capacity score}
+Capacity represents ability to absorb loss. The implementation uses horizon, disposable-income ratio, emergency reserve, dependants, income stability, EMI burden and a retirement-stage adjustment. Capacity is not inferred from behaviour.
+
+\subsection{Tolerance score}
+Tolerance represents willingness to accept volatility and loss. It uses loss reaction, stated drawdown comfort, return preference, market experience and a behavioural haircut after recent speculative losses.
+
+\subsection{Conflict resolution}
+Let $C$ be capacity and $T$ tolerance. The base resolved score is
+\[
+R=\min(C,T).
+\]
+Hard overrides may reduce $R$ further when the emergency reserve is weak, retirement income requires protection, or speculative-loss behaviour conflicts with a request for rapid returns. This makes the rule transparent and auditable: willingness cannot override inability to bear loss.
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Persona & Capacity & Tolerance & Resolved & Bucket\\
+\midrule
+Fresh graduate & 65 & 70 & \RiskScoreA & \RiskBucketA\\
+Young couple & 79 & 77 & \RiskScoreB & \RiskBucketB\\
+Small business owner & 67 & 32 & \RiskScoreC & \RiskBucketC\\
+Doctor & 80 & 17 & \RiskScoreD & \RiskBucketD\\
+Retiree & 68 & 0 & \RiskScoreE & \RiskBucketE\\
+Aggressive trader & 58 & 100 & \RiskScoreF & \RiskBucketF\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The fixture values above are demo inputs created only to exercise the six persona archetypes because the problem statement does not provide all fields needed for a complete profile. In production, missing fields must be collected from the client instead of inferred.
+
+\section{Goal Planning and Glide Path}
+For a goal with present cost $P$, inflation $i$ and horizon $y$, the required nominal corpus is
+\[
+F=P(1+i)^y.
+\]
+If existing earmarked savings are $S_0$ and the planning return assumption is $r$, their future value is $S_0(1+r)^y$. For $n=12y$ month-end contributions and monthly rate $r_m=(1+r)^{1/12}-1$, the required SIP is
+\[
+\mathrm{SIP}=\frac{\max(0,F-S_0(1+r)^y)r_m}{(1+r_m)^n-1}.
+\]
+The interface exposes inflation and return as editable planning assumptions and labels them as non-guaranteed scenarios.
+
+Initial equity/debt/cash weights are mapped from the resolved suitability bucket. During the final seven years, equity is progressively reduced toward a floor while debt and cash rise. The glide path is therefore goal-time-dependent rather than a static age rule.
+
+\section{Portfolio Construction and 10-Year Backtest}
+\subsection{Fund universe and ranking}
+The live adapter reads AMFI's published scheme/NAV universe and filters for Direct Growth schemes. For a scheme with sufficient verified history, the engine computes annualized return, volatility and maximum drawdown. Ranking uses percentile-normalized terms:
+\[
+\mathrm{Score}=0.45R_{pct}+0.35D_{pct}+0.20V_{pct},
+\]
+where drawdown and volatility are sign-inverted so lower risk scores better. If a verified expense ratio is supplied from a factsheet, cost receives an additional 15\% weight and the NAV-derived score is correspondingly scaled. Metrics that are not verified are not fabricated.
+
+\subsection{Reproducible allocation backtest}
+For offline reproducibility, the repository bundles the official Nifty 50 TRI monthly-return series for 2015 through 2024 from the Nifty 50 whitepaper. The defensive leg is an explicit 7\% annual planning proxy. It is not presented as a historical mutual-fund return. This creates a 120-month reproducible stress/backtest of each recommended asset-allocation mix while keeping the claim boundary honest.
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Resolved profile & Equity weight & 10y CAGR & Max drawdown\\
+\midrule
+Conservative & 20\% & \BTCagrC & \BTMddC\\
+Moderate & 35\% & \BTCagrA & \BTMddA\\
+Growth & 70\% & \BTCagrB & \BTMddB\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These backtest values are generated by \code{scripts/generate\_report\_metrics.py}; the same script produces the LaTeX macros used in this table. Re-running the repository therefore reproduces the report numbers exactly. For production, the debt proxy should be replaced with a verified benchmark or fund NAV series and selected fund histories should be cached into the repository snapshot used for approval.
+
+\section{Citation-First Research Assistant}
+The research path is designed around negative scoring for uncited or invented facts. Each indexed chunk stores the document source, page and local file. Retrieval returns evidence objects, not just text. The default response mode is extractive and conservative. If no relevant evidence clears the retrieval threshold, the system returns: \emph{Insufficient evidence in the indexed documents. I will not invent a fund fact.}
+
+This design supports factsheets, Scheme Information Documents, portfolio disclosures and regulatory PDFs. A PDF ingestion helper converts each page into a page-addressable evidence chunk. A generative model can be added after retrieval, but it must be constrained to the retrieved context and preserve citations.
+
+\section{Guardrails and Human-in-the-Loop Control}
+The deterministic guardrail engine blocks five adversarial classes: return guarantees, speculative or concentrated requests, adviser-approval bypass, conflict-disclosure bypass and evidence fabrication. Suitability mismatch adds an additional client-specific flag when a conservative or moderate profile requests concentrated or all-equity exposure.
+
+The included test suite exercises the ten adversarial prompts bundled with the repository. The current deterministic suite passes \AdvPass. The client-facing path always sets \code{requires\_adviser\_approval=true}, even when no hard conflict is detected.
+
+A final approval creates a timestamped record containing adviser identity, client, status and a SHA-256-derived short plan hash. This makes the approved plan distinguishable from later edits and gives the adviser a compact audit trail.
+
+\section{Evaluation Against the Challenge Rubric}
+\begin{center}
+\begin{tabularx}{0.98\linewidth}{>{\bfseries}p{32mm} X}
+\toprule
+Rubric & Submission strategy\\
+\midrule
+Suitability & Separate capacity and tolerance, conservative conflict resolution, hard overrides, six persona fixtures and explicit missing-data policy.\\
+Factual accuracy & Source/page metadata, evidence-only retrieval, abstention on unsupported facts, AMFI/AMC ingestion path.\\
+Guardrail robustness & Deterministic rules before any language-model response; adversarial suite result: \AdvPass.\\
+Adviser time saved & One screen moves from persona to risk result, goal plan, backtest, research evidence and approval. Audit output is generated automatically.\\
+Reproducibility & Report metrics are code-generated; tests, source data and assumptions are versioned in the same repository.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Limitations and Production Path}
+The submission intentionally avoids pretending that incomplete demo persona descriptions are complete KYC profiles. It also does not claim the 7\% defensive proxy is a realized debt-fund return. Before production deployment, the adviser should ingest current AMC factsheets/SIDs, verify expense ratio/AUM/manager-tenure fields, freeze the exact AMFI NAV snapshot used for each recommendation, replace benchmark proxies with verified selected-fund histories, add authentication and role-based access, encrypt client data, and subject all suitability rules to compliance review.
+
+The design is therefore useful under the hackathon time constraint without hiding where evidence is incomplete. The central product claim is not autonomous advice. It is faster, reproducible adviser decision support with a hard human approval boundary.
+
+\section*{Reproducibility}
+\textbf{Run:} \code{pip install -r requirements.txt}, then \code{pytest -q}, \code{python scripts/generate\_report\_metrics.py}, and \code{streamlit run app.py}. The supplied test suite currently contains 8 passing tests.
+
+\textbf{Primary sources:}
+\begin{itemize}
+\item \href{https://www.amfiindia.com/net-asset-value/nav-download}{AMFI NAV download and history}
+\item \href{https://www.sebi.gov.in/legal/regulations/nov-2025/securities-and-exchange-board-of-india-investment-advisers-regulations-2013-and-securities-last-amended-on-november-25-2025-_98246.html}{SEBI Investment Adviser Regulations}
+\item \href{https://www.sebi.gov.in/sebi_data/faqfiles/aug-2025/1755174193178.pdf}{SEBI RIA FAQ on risk profiling and suitability}
+\item \href{https://www.niftyindices.com/docs/default-source/indices/nifty-50/nifty-50-whitepaper_2025.pdf}{Nifty 50 whitepaper monthly TRI return exhibit}
+\end{itemize}
+
+\vfill
+\begin{center}\small
+\textbf{Disclaimer:} This software is an adviser-assistance prototype. It does not guarantee returns and is not autonomous investment advice. All client-facing recommendations require review and approval by the registered investment adviser.
+\end{center}
+\end{document}
